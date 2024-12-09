@@ -2,8 +2,8 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "Player" ,menuName = "PlayerMovement")]
-public class PlayerMovementStats : ScriptableObject
+[CreateAssetMenu(fileName = "AI", menuName = "AIMovement")]
+public class AIMovementStats : ScriptableObject
 {
     [Header("Walk")]
     [Range(1f, 100f)] public float _maxWalkSpeed = 12.5f;

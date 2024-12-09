@@ -5,7 +5,7 @@ using UnityEngine.InputSystem;
 
 public class PlayerMovement : MonoBehaviour
 {
-    enum PlayerStates { Idle, Running, Airborne}
+    enum PlayerStates { Idle, Running, Airborne, Kicking}
     PlayerStates _state;
     bool _stateComplete;
 
@@ -13,6 +13,7 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private PlayerMovementStats MoveStats;
     [SerializeField] private Collider2D _feetColl;
     [SerializeField] private Collider2D _bodyColl;
+    [SerializeField] private Animator _animator;
 
     private Rigidbody2D _rb;
 
@@ -24,6 +25,8 @@ public class PlayerMovement : MonoBehaviour
     private RaycastHit2D _headHit;
     private bool _isGrounded;
     private bool _bumpedHead;
+    private bool _isKicking;
+    public bool _canKick;
 
     //jump
     public float VerticalVelocity { get; private set; }
@@ -46,20 +49,19 @@ public class PlayerMovement : MonoBehaviour
     //coyote time
     private float _coyoteTimer;
 
+    //kick
+    [SerializeField] private GameObject _ball;
+    private Rigidbody2D _rbBall;
+    float _ballX = 0.1f;
+    float _ballY = 0.1f;
+
     private void Awake()
     {
         _rb = GetComponent<Rigidbody2D>();
-    }
+        _ball = GameObject.FindGameObjectWithTag("Ball");
+        _rbBall = _ball.GetComponent<Rigidbody2D>();
 
-    private void Update()
-    {
-        JumpChecks();
-        CountTimers();
-        if(_stateComplete)
-        {
-            SelectState();
-        }
-        UpdateState();
+        //this.enabled = false;
     }
 
     private void FixedUpdate()
@@ -72,20 +74,62 @@ public class PlayerMovement : MonoBehaviour
         }
         else Move(MoveStats._airAcceleration, MoveStats._airDeceleration, InputManager._movement);
     }
+    private void Update()
+    {
+        Kick();
+        JumpChecks();
+        CountTimers();
+        if (_stateComplete)
+        {
+            SelectState();
+        }
+        UpdateState();
+    }
 
+    #region States
     void UpdateIdle()
     {
-
+        if(InputManager._movement.x != 0 || !_isGrounded) _stateComplete = true;
     }
 
     void UpdateRun()
     {
-
+        float velX = _moveVelocity.x;
+        _animator.speed = Mathf.Abs(velX) / MoveStats._maxWalkSpeed;
+        if(_isGrounded || Mathf.Abs(velX) < 0.1f) _stateComplete = true;
     }
 
     void UpdateAirborne()
     {
+        float time = Map(VerticalVelocity, _fastFallReleaseSpeed, - _fastFallReleaseSpeed, 0 , 1, true);
+        _animator.Play("Player_Jump", 0, time);
+        _animator.speed = 0;
+        if(_isGrounded) _stateComplete = true;
+    }
 
+    void UpdateKicking()
+    {
+        if (_isKicking == false) _stateComplete = true;
+    }
+
+    void StartIdle()
+    {
+        _animator.Play("Player_Idle");
+    }
+
+    void StartRunning()
+    {
+        _animator.Play("Player_Run");
+    }
+
+    void StartAirborne()
+    {
+        _animator.Play("Player_Jump");
+    }
+
+    void StartKicking()
+    {
+        _animator.Play("Player_Kick");
     }
     private void UpdateState()
     {
@@ -100,19 +144,45 @@ public class PlayerMovement : MonoBehaviour
             case PlayerStates.Airborne:
                 UpdateAirborne();
                 break;
+            case PlayerStates.Kicking:
+                UpdateKicking();
+                break;
         }
     }
 
     private void SelectState()
     {
         _stateComplete = false;
-        if(_isGrounded)
+        //if kicking
+        if (_isKicking)
         {
-            //if()
+            //Debug.Log(_isKicking);
+            _state = PlayerStates.Kicking;
+            StartKicking();
         }
-        else _state = PlayerStates.Airborne;
+        if (_isGrounded) //if the player is on the ground
+        {
+            //if idling
+            if(InputManager._movement.x == 0)
+            {
+                _state = PlayerStates.Idle;
+                StartIdle();
+            }
+            else //if running
+            {
+                _state = PlayerStates.Running;
+                StartRunning();
+            }
+        }
+        else
+        {
+            //if not on the ground
+            _state = PlayerStates.Airborne; 
+            StartAirborne();
+        }
+        
     }
-
+    #endregion
     #region Movement
     private void Move(float acceleration, float deceleration, Vector2 moveInput)
     {
@@ -128,6 +198,30 @@ public class PlayerMovement : MonoBehaviour
             _moveVelocity = Vector2.Lerp(_moveVelocity, Vector2.zero, deceleration * Time.fixedDeltaTime);
             _rb.velocity = new Vector2(_moveVelocity.x, _rb.velocity.y);
         }
+    }
+    #endregion
+
+    #region Kicking
+    private void Kick()
+    {
+        if (InputManager._kickWasPressed) //if kick was pressed
+        {
+            _isKicking = true;
+            if (_canKick)
+            {
+                _rbBall.AddForce(new Vector2(_ballX, _ballY));
+            }
+        }
+        if(InputManager._kickWasReleased) //if kick was released
+        {
+            //StartCoroutine(KickCD());
+        }
+    }
+
+    IEnumerator KickCD()
+    {
+        yield return new WaitForSeconds(1);
+        _isKicking = false;
     }
     #endregion
 
@@ -386,4 +480,10 @@ public class PlayerMovement : MonoBehaviour
     }
 
     #endregion
+
+    public static float Map(float value, float min1, float max1, float min2, float max2, bool clamp = false)
+    {
+        float val = min2 + (max2 - min2) * ((value - min1) / (max1 - min1));
+        return clamp ? Mathf.Clamp(val, Mathf.Min(min2, max2), Mathf.Max(min2, max2)) : val;
+    }
 }

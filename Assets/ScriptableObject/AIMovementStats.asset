@@ -9,8 +9,8 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1f10ecc297803ca458c7a3f35a766be7, type: 3}
-  m_Name: PlayerMovementStats
+  m_Script: {fileID: 11500000, guid: 1140a3a40cc7e06499c2e0c5d49855b9, type: 3}
+  m_Name: AIMovementStats
   m_EditorClassIdentifier: 
   _maxWalkSpeed: 12.5
   _groundAcceleration: 5
