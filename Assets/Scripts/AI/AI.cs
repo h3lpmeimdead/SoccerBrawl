@@ -8,7 +8,7 @@ public class AI : MonoBehaviour
 
     public bool _canShoot, _canJump, _isGrounded;
 
-    [SerializeField] private Transform _defence, _groundCheck;
+    [SerializeField] private Transform _defence, _groundCheck, _pointToStop;
     private GameObject _ball;
     private Rigidbody2D _rb;
     private Rigidbody2D _rbBall;
@@ -41,6 +41,7 @@ public class AI : MonoBehaviour
 
     public void Move()
     {
+        //chase the ball
         if(Mathf.Abs(_ball.transform.position.x - transform.position.x) < _rangerDefence)
         {
             if(_ball.transform.position.x > transform.position.x)
@@ -50,11 +51,11 @@ public class AI : MonoBehaviour
             else 
                 _rb.velocity = new Vector2(-Time.deltaTime * _speed, _rb.velocity.y);
         }
-        else
+        else 
         {
-            if (transform.position.x > _defence.position.x)
-                _rb.velocity = new Vector2(-Time.deltaTime * _speed, _rb.velocity.y);
-            else
+            if (transform.position.x < _defence.position.x)
+                _rb.velocity = new Vector2(Time.deltaTime * _speed, _rb.velocity.y);
+            else if (transform.position.x >= _pointToStop.transform.position.x)
                 _rb.velocity = new Vector2(0, _rb.velocity.y);
         }
     }

@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Cinemachine;
 
 public class BallPhysics : MonoBehaviour
 {
@@ -9,11 +10,14 @@ public class BallPhysics : MonoBehaviour
     private Rigidbody2D _rb;
     Vector3 _lastVelocity;
 
+    private CinemachineImpulseSource _impulseSource;
+
     private void Start()
     {
         _playerMovement = _playerMovement.GetComponent<PlayerMovement>();
         _ai = _ai.GetComponent<AI>();
         _rb = GetComponent<Rigidbody2D>();
+        _impulseSource = GetComponent<CinemachineImpulseSource>();
     }
 
     private void Update()
@@ -58,6 +62,10 @@ public class BallPhysics : MonoBehaviour
         var speed = _lastVelocity.magnitude;
         var direction = Vector3.Reflect(_lastVelocity.normalized, collision.contacts[0].normal);
 
-        _rb.velocity = direction * Mathf.Max(speed, -1f);
+        _rb.velocity = direction * Mathf.Max((speed / 2) + 5, -3f);
+        if(collision.gameObject.tag == "Wall")
+        {
+            CameraShakeManager.Instance.CameraShake(_impulseSource);
+        }
     }
 }
